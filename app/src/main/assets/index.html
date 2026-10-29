@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101a28"><title>CUERDA MET | Divisiones circulares</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1420;--panel:#172234;--line:#304056;--ink:#f0f4fa;--muted:#a5b4c7;--accent:#35c9b0}*{box-sizing:border-box}body{margin:0;background:var(--bg);font:16px system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}main{max-width:700px;margin:auto;padding:20px 14px 32px}header{margin:0 0 22px}h1{font-size:25px;letter-spacing:.08em;margin:0}header p{color:var(--muted);margin:5px 0 0;font-size:13px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px;margin:14px 0}.inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-size:13px;color:var(--muted);display:block;margin-bottom:7px}input{width:100%;background:#0d1725;border:1px solid #45566d;border-radius:9px;color:white;padding:12px;font:600 18px system-ui;min-width:0}input:focus{outline:2px solid var(--accent);outline-offset:1px}.drawing{background:#fff;border-radius:10px;padding:8px;margin-top:14px}svg{display:block;width:100%;height:auto;max-height:470px}.result{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 3px 0}.result small{color:var(--muted);font-size:13px}.result strong{color:var(--accent);font-size:23px;font-variant-numeric:tabular-nums;white-space:nowrap}.note{font-size:12px;color:var(--muted);line-height:1.5}.error{color:#ffb5ad;font-size:13px;min-height:18px;margin-top:9px}button{border:1px solid #53677e;background:#23374b;color:#fff;padding:11px 16px;border-radius:9px;font:600 14px system-ui;cursor:pointer}button:hover{background:#2c4860}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}@media(max-width:380px){.inputs{gap:8px}.panel{padding:12px}.result strong{font-size:19px}}
+</style></head><body><main>
+<header><h1>CUERDA <span style="color:var(--accent)">MET</span></h1><p>Calculadora de divisiones circulares · Taller metalúrgico</p></header>
+<section class="panel"><div class="inputs"><div><label for="diam">Diámetro de centros (mm)</label><input id="diam" type="number" min="0.001" step="any" inputmode="decimal" value="140"></div><div><label for="count">Cantidad de divisiones</label><input id="count" type="number" min="3" max="360" step="1" inputmode="numeric" value="7"></div></div><div id="error" class="error" role="status"></div>
+<div class="drawing"><svg id="drawing" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 420" role="img" aria-label="Plano técnico de la distribución circular y cuerda entre puntos consecutivos"></svg></div>
+<div class="result"><small>Cuerda entre centros consecutivos</small><strong id="result">—</strong></div>
+<div class="actions"><button id="save" type="button">Guardar dibujo SVG</button><button id="reset" type="button">Restablecer</button></div></section>
+<p class="note">La medida corresponde al diámetro de la circunferencia que pasa por los centros, no necesariamente al diámetro exterior de la pieza. Cotas en milímetros. Uso orientativo para trazado y comprobación: el método manual puede acumular errores.</p>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), svg=$('drawing'), NS='http://www.w3.org/2000/svg';
+const format=x=>x.toLocaleString('es-AR',{minimumFractionDigits:3,maximumFractionDigits:3});
+function node(tag,attrs={},text){const e=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;svg.appendChild(e);return e}
+function render(){
+ const d=Number($('diam').value), z=Number($('count').value);svg.replaceChildren();
+ if(!$('diam').value||!$('count').value||!Number.isFinite(d)||d<=0||!Number.isInteger(z)||z<3||z>360){$('error').textContent='Ingresá un diámetro positivo y entre 3 y 360 divisiones enteras.';$('result').textContent='—';$('save').disabled=true;return}
+ $('error').textContent='';$('save').disabled=false;
+ const chord=d*Math.sin(Math.PI/z), angle=360/z, cx=220,cy=198,r=142;
+ const point=i=>({x:cx+r*Math.cos(-Math.PI/2+2*Math.PI*i/z),y:cy+r*Math.sin(-Math.PI/2+2*Math.PI*i/z)});
+ const A=point(0),B=point(1),vx=B.x-A.x,vy=B.y-A.y,L=Math.hypot(vx,vy),mx=(A.x+B.x)/2,my=(A.y+B.y)/2;
+ let nx=-vy/L,ny=vx/L;if((mx-cx)*nx+(my-cy)*ny<0){nx=-nx;ny=-ny}
+ // Keep the dimension outside the pitch circle, with a consistent drafting offset.
+ const off=27, a={x:A.x+nx*off,y:A.y+ny*off},b={x:B.x+nx*off,y:B.y+ny*off};
+ node('rect',{x:0,y:0,width:440,height:420,fill:'#ffffff'});
+ node('circle',{cx,cy,r,fill:'none',stroke:'#27313b','stroke-width':1.15});
+ node('line',{x1:cx-r-15,y1:cy,x2:cx+r+15,y2:cy,stroke:'#9ca8b4','stroke-width':.65,'stroke-dasharray':'11 3 2 3'});
+ node('line',{x1:cx,y1:cy-r-15,x2:cx,y2:cy+r+15,stroke:'#9ca8b4','stroke-width':.65,'stroke-dasharray':'11 3 2 3'});
+ for(let i=0;i<z;i++){const p=point(i);node('circle',{cx:p.x,cy:p.y,r:z>90?1.05:z>40?1.5:2.6,fill:'white',stroke:'#293542','stroke-width':z>90?.5:.85})}
+ node('line',{x1:A.x,y1:A.y,x2:B.x,y2:B.y,stroke:'#0d806f','stroke-width':1.7});
+ for(const [p,q] of [[A,a],[B,b]])node('line',{x1:p.x-nx*6,y1:p.y-ny*6,x2:q.x+nx*8,y2:q.y+ny*8,stroke:'#33414f','stroke-width':.7});
+ node('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#26333e','stroke-width':.8});
+ const ux=vx/L,uy=vy/L,arrow=6,wing=2;
+ function tip(p,dir){node('path',{d:`M ${p.x} ${p.y} L ${p.x+dir*ux*arrow+nx*wing} ${p.y+dir*uy*arrow+ny*wing} L ${p.x+dir*ux*arrow-nx*wing} ${p.y+dir*uy*arrow-ny*wing} Z`,fill:'#26333e'})}
+ tip(a,1);tip(b,-1);
+ const tx=(a.x+b.x)/2+nx*13,ty=(a.y+b.y)/2+ny*13;
+ // White text backing ensures legibility over closely spaced points.
+ const label=format(chord);const fontSize=10.5;
+ const labelWidth=Math.max(38,label.length*6.1+8);
+ node('rect',{x:tx-labelWidth/2,y:ty-11,width:labelWidth,height:16,rx:2,fill:'#ffffff',opacity:.96});
+ node('text',{x:tx,y:ty+1,'text-anchor':'middle','font-size':fontSize,'font-family':'Arial, sans-serif',fill:'#1e2b36'},label);
+ node('text',{x:220,y:370,'text-anchor':'middle','font-size':12,'font-family':'Arial, sans-serif',fill:'#28333e'},`Ø${format(d)} mm  ·  ${z} divisiones`);
+ node('text',{x:220,y:391,'text-anchor':'middle','font-size':10.5,'font-family':'Arial, sans-serif',fill:'#647180'},`Ángulo entre centros: ${format(angle)}°  ·  Cotas en mm`);
+ $('result').textContent=format(chord)+' mm';
+}
+$('diam').addEventListener('input',render);$('count').addEventListener('input',render);
+$('reset').addEventListener('click',()=>{$('diam').value='140';$('count').value='7';render()});
+$('save').addEventListener('click',()=>{const xml=new XMLSerializer().serializeToString(svg),filename=`cuerda_${$('count').value}_divisiones.svg`;if(window.CuerdaAndroid){window.CuerdaAndroid.saveSvg(xml,filename);return}const blob=new Blob([xml],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+render();
+</script></body></html>

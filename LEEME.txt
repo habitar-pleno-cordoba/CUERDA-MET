@@ -1,0 +1,13 @@
+CUERDA MET - Android
+
+Proyecto para compilar APK con GitHub Actions.
+1. Crear repositorio GitHub nuevo.
+2. Subir el CONTENIDO de esta carpeta a la raiz del repositorio (incluida .github).
+3. Ir a Actions > Compilar CUERDA MET APK > Run workflow.
+4. Al terminar, descargar el artefacto CUERDA_MET_APK, descomprimir e instalar app-debug.apk.
+
+Compatible con Android 10 o superior (API 29+), sujeto a pruebas en cada equipo.
+El APK es debug, firmado automaticamente para pruebas. Para distribuir en Play Store hace falta una compilacion release firmada.
+La aplicacion no necesita internet ni permisos de red.
+El guardado SVG usa Descargas del dispositivo.
+Las advertencias de instalacion dependen del sistema Android y Play Protect.
